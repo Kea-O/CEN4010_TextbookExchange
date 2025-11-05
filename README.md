@@ -1,0 +1,1 @@
+A textbook exchange app created for Principles of Software Engineering, CEN4010, at Florida Altnatic University. This app aims to allow users to post textbooks they're willing to sell, with a messaging system letting buyers inquire or haggle with the sellers. Buyers can browse a post feed or search for specific textbooks.
