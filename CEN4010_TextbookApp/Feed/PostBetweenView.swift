@@ -16,16 +16,25 @@ final class PostBetweenView: ObservableObject {
     
     private let manager = PostManager()
     
+    // Set to true to use mock data instead of Firebase (useful when Firebase permissions aren't set up)
+    var useMockData: Bool = false
+    
     func loadPosts(force: Bool = false) async {
         if isLoading && !force { return }
         isLoading = true
         defer { isLoading = false }
         
-        do {
-            posts = try await manager.fetchPost()
+        if useMockData {
+            // Use mock data for development
+            posts = Post.mockPosts.sorted { $0.timestamp > $1.timestamp }
             errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
+        } else {
+            do {
+                posts = try await manager.fetchPost()
+                errorMessage = nil
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
     

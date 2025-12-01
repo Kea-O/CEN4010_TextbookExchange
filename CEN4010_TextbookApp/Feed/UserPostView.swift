@@ -16,7 +16,9 @@ struct UserPostView: View {
     @State private var showCreatePost = false
     
     private var userPosts: [Post] {
-        guard let userId = user.id else { return [] }
+        // Use demoID for demo users, otherwise use the actual id
+        let userId = user.demoID ?? user.id
+        guard let userId = userId else { return [] }
         return between.posts.filter { $0.user_id == userId }
     }
     

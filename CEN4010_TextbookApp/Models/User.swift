@@ -15,11 +15,22 @@ struct User: Identifiable, Codable {
     var email: String
     
     // A fake user for testing Firebase and UI previews
+    // Note: The id is set to nil to avoid Firestore warnings.
+    // For demo filtering, use user_id field in posts instead of user.id
     static var demo: User {
         User(
-            id: "demo-user-001",
+            id: nil,
             name: "Demo Seller",
-            email: "demo@university.edu",
+            email: "demo@university.edu"
         )
+    }
+    
+    // Helper property for demo/mock user ID used in filtering
+    var demoID: String? {
+        if let id = id {
+            return id
+        }
+        // Return mock user ID if this is a mock user
+        return mockUserID != "unknown-user" ? mockUserID : (name == "Demo Seller" ? "demo-user-001" : nil)
     }
 }

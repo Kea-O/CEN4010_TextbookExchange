@@ -11,11 +11,24 @@ struct ContentView: View {
     private enum Tab: Hashable {
         case feed
         case myPosts
+        case messages
     }
     
     @StateObject private var between = PostBetweenView()
+    @StateObject private var messageBetween = MessageBetweenView()
     @State private var currentUser = User.demo
     @State private var selectedTab: Tab = .feed
+    
+    init() {
+        // Enable mock data mode when Firebase permissions aren't set up
+        // Set to false when Firebase is ready
+        let useMockData = true // Change to false when Firebase rules are deployed
+        _between = StateObject(wrappedValue: {
+            let view = PostBetweenView()
+            view.useMockData = useMockData
+            return view
+        }())
+    }
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -27,6 +40,7 @@ struct ContentView: View {
             }
             .tag(Tab.feed)
             .environmentObject(between)
+            .environmentObject(messageBetween)
             
             NavigationStack {
                 UserPostView(user: currentUser)
@@ -36,6 +50,18 @@ struct ContentView: View {
             }
             .tag(Tab.myPosts)
             .environmentObject(between)
+            
+            NavigationStack {
+                ConversationListView(currentUser: currentUser)
+            }
+            .tabItem {
+                Label("Messages", systemImage: "message")
+            }
+            .tag(Tab.messages)
+            .environmentObject(messageBetween)
+        }
+        .onAppear {
+            messageBetween.useMockData = true
         }
     }
 }
