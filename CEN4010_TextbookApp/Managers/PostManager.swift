@@ -31,7 +31,10 @@ class PostManager {
     
     // Create a function for creating posts. We'll make the input a Post, which means we'll need to create the Post instance before using this function, which is fine because Post wants a image URL, so we'll need to upload an image to Firebase first.
     func createPost(post: Post) async throws {
-        try db.collection("TextbookPosts").addDocument(from: post)
+        // Create a mutable copy without the DocumentID to avoid encoding issues
+        var postToCreate = post
+        postToCreate.id = nil
+        try db.collection("TextbookPosts").addDocument(from: postToCreate)
     }
     
     // Make a function that uploads the user-given image of the textbook to Firebase. We'll be taking in the raw image data (usually a JPEG) and an ID to name the image file in Firebase Storage.

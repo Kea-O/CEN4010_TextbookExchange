@@ -6,6 +6,8 @@
 //
 
 import Foundation
+// Import UIKit for images:
+import UIKit
 
 // We'll need an in-between view using the functions from the manager to add/delete posts and act as a buffer/loading screen for the views users are using.
 @MainActor
@@ -17,12 +19,16 @@ final class PostBetweenView: ObservableObject {
     private let manager = PostManager()
     
     func loadPosts(force: Bool = false) async {
-        if isLoading && !force { return }
+        if isLoading { return }
         isLoading = true
         defer { isLoading = false }
-        
         do {
-            posts = try await manager.fetchPost()
+            let newPosts = try await manager.fetchPost()
+            
+            // Change only if new data was introduced or old data deleted.
+            if posts != newPosts {
+                posts = newPosts
+            }
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -31,6 +37,17 @@ final class PostBetweenView: ObservableObject {
     
     func refresh() async {
         await loadPosts(force: true)
+    }
+    
+    // Function that mirrors the save image function from PostManager:
+    func saveImage(data: Data, ID: String) async throws -> String {
+        do {
+            let url = try await manager.uploadImage(imageData: data, postID: ID)
+            return url
+        } catch {
+            errorMessage = error.localizedDescription
+            throw error
+        }
     }
     
     func create(post: Post) async throws {

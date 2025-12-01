@@ -12,11 +12,13 @@
 		CC3C00A72EBBB872000052BF /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = CC3C00A62EBBB872000052BF /* FirebaseStorage */; };
 		CC3C014E2ECC9509000052BF /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = CC3C014D2ECC9509000052BF /* FirebaseFirestore */; };
 		CC439A8D2ED9F7A300556261 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = CC439A8C2ED9F79D00556261 /* README.md */; };
+		CC439B9C2EE1197900556261 /* demo.gif in Resources */ = {isa = PBXBuildFile; fileRef = CC439B9B2EE1197900556261 /* demo.gif */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		CC3C00902EBAEB13000052BF /* CEN4010_TextbookApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CEN4010_TextbookApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC439A8C2ED9F79D00556261 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		CC439B9B2EE1197900556261 /* demo.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = demo.gif; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -45,6 +47,7 @@
 		CC3C00872EBAEB13000052BF = {
 			isa = PBXGroup;
 			children = (
+				CC439B9B2EE1197900556261 /* demo.gif */,
 				CC439A8C2ED9F79D00556261 /* README.md */,
 				CC3C00922EBAEB13000052BF /* CEN4010_TextbookApp */,
 				CC3C00A12EBBB861000052BF /* Frameworks */,
@@ -139,6 +142,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CC439A8D2ED9F7A300556261 /* README.md in Resources */,
+				CC439B9C2EE1197900556261 /* demo.gif in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

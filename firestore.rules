@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to TextbookPosts collection
+    // For production, you should add authentication checks
+    match /TextbookPosts/{postId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Allow read/write access to Users collection (if you have one)
+    match /Users/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}
+

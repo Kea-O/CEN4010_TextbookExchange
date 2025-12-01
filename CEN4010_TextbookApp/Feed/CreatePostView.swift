@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+// For managing images, we'll need:
+import UIKit
 
 struct CreatePostView: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var viewModel: PostBetweenView
+    @EnvironmentObject var betweenPost: PostBetweenView
     
-    let user: User
+    let user: AppUser
     
     @State private var title: String = ""
     @State private var author: String = ""
@@ -26,6 +28,11 @@ struct CreatePostView: View {
     @State private var isSaving = false
     @State private var showErrorAlert = false
     @State private var localErrorMessage: String = ""
+    
+    // Create some variables to help with the user uploading their image of the textbook:
+    @State private var selectedImage: UIImage?
+    @State private var showImagePicker = false
+
     
     private var formIsValid: Bool {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -82,6 +89,31 @@ struct CreatePostView: View {
                         .lineLimit(2, reservesSpace: true)
                 }
                 
+                Section("Image") {
+                    VStack {
+                        if let image = selectedImage {
+                            // Show preview
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxHeight: 200)
+                                .cornerRadius(10)
+                                .padding(.vertical)
+                            
+                            Button("Remove Image") {
+                                selectedImage = nil
+                            }
+                            .foregroundColor(.red)
+                            
+                        } else {
+                            // Button to select image
+                            Button("Select Image") {
+                                showImagePicker = true
+                            }
+                        }
+                    }
+                }
+                
                 Section {
                     Button {
                         Task { await savePost() }
@@ -96,6 +128,9 @@ struct CreatePostView: View {
                     }
                     .disabled(isSaving)
                 }
+            }
+            .sheet(isPresented: $showImagePicker) {
+                ImagePicker(image: $selectedImage)
             }
             .navigationTitle("New Post")
             .toolbar {
@@ -131,7 +166,7 @@ struct CreatePostView: View {
         
         // Ensure all fields are filled before attempting to save
         let requiredFields = [trimmedTitle, trimmedAuthor, trimmedEdition, trimmedISBN, trimmedPrice, trimmedLocations, trimmedTimes]
-        guard requiredFields.allSatisfy({ !$0.isEmpty }) else {
+        guard requiredFields.allSatisfy({ !$0.isEmpty }), selectedImage != nil else {
             presentError("Please fill out all fields before posting.")
             return
         }
@@ -141,24 +176,38 @@ struct CreatePostView: View {
             return
         }
         
-        let placeholderImageURL = ""
+        // First, we need to upload the image and get the URL back. But Firebase expects a JPEG image, and the function expects the data from that image. So we'll need to covnert the image to JPEG data. We'll use a 0.6 compressionQuality so it'll use less data but still be viewable.
+        guard let imageData = selectedImage?.jpegData(compressionQuality: 0.6) else { return }
         
+        // Now we'll create a variable to contain the URL of the image
+        let ImageURL: String
+        
+        // Call the function and get the URL:
+        do {
+            ImageURL = try await betweenPost.saveImage(data: imageData, ID: userId)
+        } catch {
+            presentError("Image upload failed: \(error.localizedDescription)")
+            return
+        }
+        
+        // Now we make a Post instance for this new post
         let newPost = Post(
             user_id: userId,
             title: trimmedTitle,
             author: trimmedAuthor,
-            edition: trimmedEdition.isEmpty ? nil : trimmedEdition,
-            isbn: trimmedISBN.isEmpty ? nil : trimmedISBN,
+            edition: trimmedEdition,
+            isbn: trimmedISBN,
             subject: selectedSubject.rawValue,
             price: priceValue,
             locations: trimmedLocations,
             times: trimmedTimes,
             condition: selectedCondition.rawValue,
-            image_url: placeholderImageURL
+            image_url: ImageURL
         )
         
+        // Send this post instance into Firestore:
         do {
-            try await viewModel.create(post: newPost)
+            try await betweenPost.create(post: newPost)
             dismiss()
         } catch {
             presentError(error.localizedDescription)
@@ -171,8 +220,38 @@ struct CreatePostView: View {
     }
 }
 
-#Preview {
-    CreatePostView(user: .demo)
-        .environmentObject(PostBetweenView())
-}
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.allowsEditing = true
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
 
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        let parent: ImagePicker
+        init(_ parent: ImagePicker) { self.parent = parent }
+
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]
+        ) {
+            if let edited = info[.editedImage] as? UIImage {
+                parent.image = edited
+            } else if let original = info[.originalImage] as? UIImage {
+                parent.image = original
+            }
+            picker.dismiss(animated: true)
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            picker.dismiss(animated: true)
+        }
+    }
+}

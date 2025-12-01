@@ -10,7 +10,7 @@ import FirebaseFirestore
 
 // Create a model for the posts about textbooks. We'll need an ID (provided by Firebase), a download URL for the given image, the seller's userID, texbook name, author, edition, condition, isbn, subject (such as engineering, biology, etc), price, meetup locations, meetup times, and date posted (which is recorded automatically by AppWrite).
 // The struct should also conform to Identifiable and Codable so that we can code/decode them into/from a JSON and loop through them.
-struct Post: Identifiable, Codable {
+struct Post: Identifiable, Codable, Equatable {
     // Firebase auto-generates an id string:
     @DocumentID var id: String?
     
@@ -21,8 +21,8 @@ struct Post: Identifiable, Codable {
     // Values describing the textbook::
     var title: String
     var author: String
-    var edition: String?
-    var isbn: String?
+    var edition: String
+    var isbn: String
     var subject: String
     var price: Double
     var locations: String

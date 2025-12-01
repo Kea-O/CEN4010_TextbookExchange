@@ -9,8 +9,36 @@ import SwiftUI
 
 // Create the main "feed" for the posts; here will be where users can scroll and search for textbooks or search for specific ones
 struct FeedView: View {
+    // Access the authManager from the environment
+    @Environment(AuthManager.self) var authManager
+    
+    // A variable to store our current user. Can be filled outside of this file, such as with ContentView
+    let user: AppUser
+    
     // Create an instance of the in-between view model so we can call on it's functions. We're using the BetweenView instead of PostManager because BetweenView accounts for UI.
-    @EnvironmentObject var between: PostBetweenView
+    @EnvironmentObject var betweenPost: PostBetweenView
+    @Binding var selectedTab: AppTab?
+    
+    // We'll filter the posts so that users don't see their own posts in the feed.
+    var filteredPosts: [Post] {
+        betweenPost.posts.filter{$0.user_id != user.id}
+    }
+    
+    // Now we'll filter the posts further with our search query:
+    var searchPosts: [Post] {
+        if searchText.isEmpty {
+            return filteredPosts
+        }
+
+        return filteredPosts.filter { post in
+            post.title.localizedCaseInsensitiveContains(searchText) ||
+            post.author.localizedCaseInsensitiveContains(searchText) ||
+            post.isbn.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+    
+    // Create a variable to hold what the user is searching for:
+    @State private var searchText = ""
     
     // The UI:
     var body: some View {
@@ -19,10 +47,10 @@ struct FeedView: View {
             // We'll make use of Group so we can use multiple Views with conditionals. This lets us streamline our code. In this case, we're checking for Posts to display. We'll display a Progress View while loading, a ContentUnavailableView if there are no posts, and finally a ScrollView when there are posts to scroll through them.
             // To check for posts we'll use the PostBetweenView instance, which also allows us to dynamically check and change the view based on if the data is loading in.
             Group {
-                if between.isLoading && between.posts.isEmpty {
+                if betweenPost.isLoading && searchPosts.isEmpty {
                     ProgressView("Loading posts...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if between.posts.isEmpty {
+                } else if searchPosts.isEmpty {
                     ContentUnavailableView(
                         "No posts yet",
                         systemImage: "book.fill",
@@ -34,9 +62,10 @@ struct FeedView: View {
                         // Use LazyVStack to separate the posts and allow them to overflow instead of pushing up agaianst each other on one line. Also, LazyVStack only loads visible rows into memory, potentially saving a lot of energy.
                         LazyVStack(spacing: 16) {
                             // Loop through the posts and send them to a View defined below for proper UI. Furthermore, add a NavigationLink to each one that'll bring the user to the PostDetailView, which will show more details about the Post.
-                            ForEach(between.posts) { post in
+                            ForEach(searchPosts) { post in
                                 NavigationLink {
-                                    PostDetailView(post: post)
+                                    PostDetailView(post: post, selectedTab: $selectedTab)
+                                        .environment(authManager)
                                 } label: {
                                     FeedPostRow(post: post)
                                 }
@@ -47,32 +76,39 @@ struct FeedView: View {
                     }
                     // Make it so we can refresh the feed for new posts by pulling:
                     .refreshable {
-                        await between.refresh()
+                        await betweenPost.refresh()
                     }
                 }
             }
-            // Title the navigation item for the view.
-            .navigationTitle("Feed")
-            
+            .navigationTitle("My Feed")
+            .searchable(text: $searchText, prompt: "Search Textbooks...")
             // By using a .task{}, this activates as soon as the view appears so the poasts are loaded efficiently.
             .task {
-                await between.loadPosts()
+                await betweenPost.loadPosts()
             }
             
             // Create a .alert{} to catch errors and display what went wrong to the user. The user can dismiss the alert.
             .alert(
                 "Something went wrong",
                 isPresented: Binding(
-                    get: { between.errorMessage != nil },
-                    set: { _ in between.errorMessage = nil }
+                    get: { betweenPost.errorMessage != nil },
+                    set: { _ in betweenPost.errorMessage = nil }
                 ),
                 actions: {
                     Button("OK", role: .cancel) {}
                 },
                 message: {
-                    Text(between.errorMessage ?? "")
+                    Text(betweenPost.errorMessage ?? "")
                 }
             )
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Log Out") {
+                        authManager.signOut()
+                    }
+                    .foregroundStyle(.red)
+                }
+            }
         }
     }
 }
@@ -106,10 +142,4 @@ private struct FeedPostRow: View {
                 .stroke(Color(.separator), lineWidth: 0.5)
         )
     }
-}
-
-// Preview the UI:
-#Preview {
-    FeedView()
-        .environmentObject(PostBetweenView())
 }
